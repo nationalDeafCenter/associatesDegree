@@ -5,7 +5,7 @@ library(readr) ## read in the csvs faster
 library(survey)
 library(dplyr)
 library(openxlsx)
-states <- read.csv('../../data/acs5yr2016/states.csv')
+states <- read.csv('../../data/states.csv')
 
 #1) a simple breakdown of current enrollment, and completion data, across type of institution (4 year colleges, community colleges, etc) using all the 'type of institution' data we have, so that would give us some nice descriptives and allow us to make a final decision on how we want to categorize 'community colleges and 2-year institutions'
 
@@ -19,11 +19,11 @@ makeDat <- function(){
 
 ## need: DEAR, attain, employment,PERNP, fulltime
 
-    sdat <- read_csv('../csv_pus/ss16pusa.csv')
+    sdat <- read_csv('../../data/byYear/ss16pusa.csv')
     sdat <- sdat[,pVars]
     for(nn in names(sdat)) if(is.character(sdat[[nn]])) sdat[[nn]] <- parse_integer(sdat[[nn]])
     gc()
-    sdat2 <-  read_csv('../csv_pus/ss16pusb.csv')
+    sdat2 <-  read_csv('../../data/byYear/ss16pusb.csv')
     sdat2 <- sdat2[,pVars]
     for(nn in names(sdat)) if(is.character(sdat2[[nn]])) sdat2[[nn]] <- parse_integer(sdat2[[nn]])
     sdat <- rbind(sdat,sdat2)
