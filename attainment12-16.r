@@ -155,6 +155,19 @@ sdat <- sdat%>%filter(agep>24,agep<65,type!=2)%>%
                                    ifelse(is.na(fod1p),NA,'huh'))))))))))))))))
 
 )
+
+    ## tests
+    xtabs(~attain+hs,data=sdat,addNA=TRUE)
+    xtabs(~attain+sc,data=sdat,addNA=TRUE)
+    xtabs(~attain+cc,data=sdat,addNA=TRUE)
+    xtabs(~attain+ba,data=sdat,addNA=TRUE)
+    xtabs(~attain+grad,data=sdat,addNA=TRUE)
+    xtabs(~attain+doc,data=sdat,addNA=TRUE)
+
+    xtabs(~dear+deaf,data=sdat,addNA=TRUE)
+
+    xtabs(~raceEth,data=sdat,addNA=TRUE)
+
     sdat
 }
 
