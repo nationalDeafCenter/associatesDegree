@@ -27,7 +27,7 @@ stemRelatedCodes <- read.csv('stemRelatedCodes.csv',colClasses = "character")
 makeDat <- function(){
 
     ## need: DEAR, attain, employment,PERNP, fulltime
-    pVars <- c('SERIALNO','DEAR','DDRS','DEYE','DOUT','DPHY','DRATX','DREM','RAC1P','HISP','SEX','FOD1P','SCIENGP','SCIENGRLP','ST','AGEP','SCHL','SCH','ADJINC','ESR','WKW','WKHP','WAGP','PERNP','SSIP','OCCP','PWGTP',paste0('PWGTP',1:80))
+    pVars <- c('SERIALNO','DEAR','DDRS','DEYE','DOUT','DPHY','DRATX','DREM','RAC1P','HISP','SEX','FOD1P','SCIENGP','SCIENGRLP','ST','AGEP','SCHL','SCH','ADJINC','ESR','WKW','WKHP','WAGP','PERNP','PINCP','SSIP','OCCP','PWGTP',paste0('PWGTP',1:80))
 
     ## exclude institutional (as before)
     hVars <- c('SERIALNO','TYPE')
@@ -67,11 +67,9 @@ makeDat <- function(){
     }
     names(hdat) <- tolower(names(hdat))
     sdat$type <- hdat$type[match(sdat$serialno,hdat$serialno)]
-rm(hdat,hdat2); gc()
+    rm(hdat,hdat2); gc()
 
     sdat$state <- states$abb[match(sdat$st,states$x)]
-
-    sdat <- sdat[sdat$agep>=25,]
 
     sdat <- droplevels(sdat)
 
@@ -121,19 +119,19 @@ sdat <- sdat%>%filter(agep>24,agep<65,type!=2)%>%
         ba = schl>=21,
         grad = schl>21,
         doc = schl==24,
-           employed = esr%in%c(1,2,4,5),
-           unemployed = esr==3,
-           fulltime=(wkw==1 & wkhp>=35),
-           earn=pernp*adj,
-           inc=pincp*adj,
+        employed = esr%in%c(1,2,4,5),
+        unemployed = esr==3,
+        fulltime=(wkw==1 & wkhp>=35),
+        earn=pernp*adj,
+        #inc=pincp*adj,
 
-           raceEth=ifelse(hisp>1,"Hispanic",
-                   ifelse(rac1p==2,"African American",
-                   ifelse(rac1p==6| rac1p==7,"Asian/PacIsl",
-                   ifelse(rac1p%in%c(3,4,5),'American Indian',
-                   ifelse(rac1p==1,"White","Other"))))),
+        raceEth=ifelse(hisp>1,"Hispanic",
+                ifelse(rac1p==2,"African American",
+                ifelse(rac1p==6| rac1p==7,"Asian/PacIsl",
+                ifelse(rac1p%in%c(3,4,5),'American Indian',
+                ifelse(rac1p==1,"White","Other"))))),
 
-           diss=ifelse(ddrs==1|deye==1|dout==1|dphy==1|dratx==1|drem==1,1,0),
+        diss=ifelse(ddrs==1|deye==1|dout==1|dphy==1|dratx==1|drem==1,1,0),
         blind=ifelse(deye==1,1,0),
 
         fod= ifelse(fod1p%in%c(2100,2102,2103,2105,2106,2107,2199,3700,3701,3702,3705,3799),
@@ -156,7 +154,7 @@ sdat <- sdat%>%filter(agep>24,agep<65,type!=2)%>%
                                    ifelse(fod1p%in%c(2201,2901,3202,3501,3801,4101,5301,5401:5404,5601,5701,5801,5901),'other',
                                    ifelse(is.na(fod1p),NA,'huh'))))))))))))))))
 
-
+)
     sdat
 }
 
