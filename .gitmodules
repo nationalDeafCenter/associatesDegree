@@ -1,0 +1,3 @@
+[submodule "generalCode"]
+	path = generalCode
+	url = https://github.com/nationalDeafCenter/generalCode.git
