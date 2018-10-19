@@ -45,9 +45,9 @@ for(lev in c('hs','sc','cc','ba','grad','doc')){
 attain25.45 <- list(deaf=list(),hear=list())
 for(lev in c('hs','sc','cc','ba','grad','doc')){
     attain25.45$deaf[[lev]] <-
-        estSEstr(lev,'pwgtp',paste0('pwgtp',1:80),young,deaf)
+        estSEstr(lev,'pwgtp',paste0('pwgtp',1:80),'young',deaf)
     attain25.45$hear[[lev]] <-
-        estSEstr(lev,'pwgtp',paste0('pwgtp',1:80),young,hear)
+        estSEstr(lev,'pwgtp',paste0('pwgtp',1:80),'young',hear)
 }
 gc()
 
@@ -76,60 +76,18 @@ write.xlsx(list("Age 25-64"=attain(attain25.64),"Age 25-45"=attain(attain25.45))
            row.names=TRUE)
 
 
-deafEx <- list()
-hearEx <- list()
 
-### overall
-deafEx$overall <- estExpr(attain=='Associates degree',subst=DEAR==1)
-hearEx$overall <- estExpr(attain=='Associates degree',subst=DEAR==2)
+#### break it down, associates degree
 
-## 25--64
-deafEx$a25.64 <- estExpr(attain=='Associates degree',subst=DEAR==1&AGEP>24&AGEP<65)
-hearEx$a25.64 <- estExpr(attain=='Associates degree',subst=DEAR==2&AGEP>24&AGEP<65)
+print(nrow(deafAssP <- filter(deaf,cc)))
+print(nrow(deafAss <- filter(deaf,attain=='Associates degree')))
+print(nrow(hearAssP <- filter(hear,cc)))
+print(nrow(hearAssP <- filter(hear,attain=='Associates degree')))
 
-## age range
-sdat <- sdat%>%mutate(ageRange=factor(ifelse(AGEP<25,'20-25',
-                                      ifelse(AGEP<30,'25-29',
-                                      ifelse(AGEP<40,'30-39',
-                                      ifelse(AGEP<50,'40-49',
-                                      ifelse(AGEP<65,'50-64','64+')))))))
-for(age in levels(sdat$ageRange)){
-    deafEx[[age]] <- estExpr(attain=='Associates degree',subst=DEAR==1&ageRange==age)
-    hearEx[[age]] <- estExpr(attain=='Associates degree',subst=DEAR==2&ageRange==age)
-}
+rm(deaf,hear); gc()
 
-deafCum <- list()
-hearCum <- list()
-
-### overall
-deafCum$overall <- estExpr(attain>='Associates degree',subst=DEAR==1)
-hearCum$overall <- estExpr(attain>='Associates degree',subst=DEAR==2)
-
-## 25--64
-deafCum$a25.64 <- estExpr(attain>='Associates degree',subst=DEAR==1&AGEP>24&AGEP<65)
-hearCum$a25.64 <- estExpr(attain>='Associates degree',subst=DEAR==2&AGEP>24&AGEP<65)
-
-## age range
-
-for(age in levels(sdat$ageRange)){
-    deafCum[[age]] <- estExpr(attain>='Associates degree',subst=DEAR==1&ageRange==age)
-    hearCum[[age]] <- estExpr(attain>='Associates degree',subst=DEAR==2&ageRange==age)
-}
-
-save(deafEx,hearEx,deafCum,hearCum,file='associates.RData')
-
-ex <- cbind(do.call('rbind',deafEx),do.call('rbind',hearEx))
-ex <- as.data.frame(round(ex,1))
-names(ex) <- c('Deaf','Deaf SE','Deaf N','Hearing','Hearing SE','Hearing N')
-ex <- cbind(Age=c('20+','25-64',rownames(ex)[-c(1:2)]),ex)
+## for sex, race/eth, disability type, field of degree
+## estimate percent, med. income, employment
 
 
 
-
-cum <- cbind(do.call('rbind',deafCum),do.call('rbind',hearCum))
-cum <- as.data.frame(round(cum,1))
-names(cum) <- c('Deaf','Deaf SE','Deaf N','Hearing','Hearing SE','Hearing N')
-cum <- cbind(Age=c('20+','25-64',rownames(cum)[-c(1:2)]),cum)
-
-
-openxlsx::write.xlsx(list(`Highest Level Asc.`=ex,`At Least Asc.`=cum),'AssociatesDegrees.xlsx')
