@@ -1,6 +1,8 @@
 library(readr) ## read in the csvs faster
 library(dplyr)
 library(openxlsx)
+source('generalCode/estimationFunctions.r')
+source('generalCode/median.r')
 
 
 
@@ -21,44 +23,58 @@ library(openxlsx)
 ## Median income
 ## Employment rates by field
 
+## load in dataset
+source('make5yrDat.r')
 
+sdat <- mutate(sdat, young=agep<46)
 
-### overall
+deaf <- filter(sdat,deaf==1)
+hear <- filter(sdat,deaf==0)
 
+rm(sdat); gc()
 
-svmean <- function(x,w,na.rm=TRUE){
-    w <- w/sum(w)
-    sum(x*w,na.rm=na.rm)
+### overall attainment estimates
+attain25.64 <- list(deaf=list(),hear=list())
+for(lev in c('hs','sc','cc','ba','grad','doc')){
+    attain25.64$deaf[[lev]] <-
+        estSE(deaf[[lev]],deaf$pwgtp,deaf[,paste0('pwgtp',1:80)])
+    attain25.64$hear[[lev]] <-
+        estSE(hear[[lev]],hear$pwgtp,hear[,paste0('pwgtp',1:80)])
 }
 
-estSE <- function(x,w1,wrep,na.rm=TRUE){
-    est <- svmean(x,w1,na.rm)
+attain25.45 <- list(deaf=list(),hear=list())
+for(lev in c('hs','sc','cc','ba','grad','doc')){
+    attain25.45$deaf[[lev]] <-
+        estSEstr(lev,'pwgtp',paste0('pwgtp',1:80),young,deaf)
+    attain25.45$hear[[lev]] <-
+        estSEstr(lev,'pwgtp',paste0('pwgtp',1:80),young,hear)
+}
+gc()
 
-    reps <- apply(wrep,2,function(w) svmean(x,w,na.rm))
-
-    se <- sqrt(mean((reps-est)^2)*4)
-
-    n <- if(na.rm) sum(!is.na(x)) else length(x)
-
-    c(est*100,se*100,n)
+formatRes <- function(x,deaf=TRUE){
+    res <- do.call('rbind',x)
+    res <- cbind(res[,1:2],c(1-res[1,1],1-res[-1,1]/res[-nrow(res),1]),res[,3])
+    colnames(res) <- paste(ifelse(deaf,'Deaf','Hearing'),
+                        c('Percent','SE','Percent Lost','n'))
+    res[,grep('Percent|SE',colnames(res))] <-
+        round(res[,grep('Percent|SE',colnames(res))]*100,1)
+    res
 }
 
-estExpr <- function(expr,subst,na.rm=TRUE){
-    expr <- enquo(expr)
-
-    if(!missing(subst)){
-        subst <- enquo(subst)
-        sdat <- filter(sdat,!!subst)
-    }
-
-    x <- transmute(sdat,x=!!expr)$x
-
-    estSE(x,sdat$PWGTP,sdat[,paste0('pwgtp',1:80)],na.rm)
+attain <- function(res){
+    res <- cbind(formatRes(res$deaf,deaf=TRUE),
+                 formatRes(res$hear,deaf=FALSE))
+    res <- as.data.frame(res)
+    rownames(res) <- c('HS/GED','Some College','Associates Degree',
+                       'Bachelors Degree','Graduate/Professional Degree',
+                       'Doctorate')
+    res
 }
 
+write.xlsx(list("Age 25-64"=attain(attain25.64),"Age 25-45"=attain(attain25.45)),
+           'EducationalAttainment2012-2016.xlsx',colWidths=c("auto","auto"),
+           row.names=TRUE)
 
-### data
-sdat <- makeDat()
 
 deafEx <- list()
 hearEx <- list()
