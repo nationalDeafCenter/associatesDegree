@@ -108,9 +108,9 @@ moneyEst <- function(subsets,sdat){
     groupNames <- if(!is.null(names(subsets))) names(subsets) else subsets
 
     earnEmp <- svby('earn',subsets=paste0(subsets,'&employed'),FUN=medStr,sdat=sdat)
-    colnames(earnEmp) <- c('Subgroup %','Median Earnings (Employed)','Earnings (Employed) SE','n Employed')
-    earnFT <- svby('earn',subsets=paste0(subsets,'&fulltime'),FUN=medStr,sdat=sdat,prop=FALSE)
-    colnames(earnFT) <- c('Median Earnings (Full Time)','Earnings (Full Time) SE','n Full Time')
+    colnames(earnEmp) <- c('Subgroup % (Employed)','Median Earnings (Employed)','Earnings (Employed) SE','n Employed')
+    earnFT <- svby('earn',subsets=paste0(subsets,'&fulltime'),FUN=medStr,sdat=sdat)
+    colnames(earnFT) <- c('Subgroup % (Full Time)','Median Earnings (Full Time)','Earnings (Full Time) SE','n Full Time')
     incEmp <- svby('inc',subsets=paste0(subsets,'&employed'),FUN=medStr,sdat=sdat,prop=FALSE)
     colnames(incEmp) <- c('Median Income (Employed)','Income (Employed) SE','n Employed')
     incFT <- svby('inc',subsets=paste0(subsets,'&fulltime'),FUN=medStr,sdat=sdat,prop=FALSE)
