@@ -99,21 +99,23 @@ propEst <- function(subsets,sdat,groupNames){
         out <- rbind(out,estSEstr(subst,sdat=sdat)*c(100,100,1))
     out <- as.data.frame(out)
     names(out) <- c('%','SE','Sample Size')
-    out <- cbind(subgroup=if(missing(groupNames)) subsets else groupNames,out)
+    groupNames <- if(!is.null(names(subsets))) names(subsets) else subsets
+    out <- cbind(subgroup=groupNames,out)
     out
 }
 
-moneyEst <- function(subsets,sdat,groupNames){
-    if(missing(groupNames)) groupNames <- subsets
+moneyEst <- function(subsets,sdat){
+    groupNames <- if(!is.null(names(subsets))) names(subsets) else subsets
+
     earnEmp <- svby('earn',subsets=paste0(subsets,'&employed'),FUN=medStr,sdat=sdat)
     colnames(earnEmp) <- c('Subgroup %','Median Earnings (Employed)','Earnings (Employed) SE','n Employed')
-    earnFT <- svby('earn',subsets=paste0(subsets,'&fulltime'),FUN=medStr,sdat=sdat)
-    colnames(earnFT) <- c('Subgroup %','Median Earnings (Full Time)','Earnings (Full Time) SE','n Full Time')
+    earnFT <- svby('earn',subsets=paste0(subsets,'&fulltime'),FUN=medStr,sdat=sdat,prop=FALSE)
+    colnames(earnFT) <- c('Median Earnings (Full Time)','Earnings (Full Time) SE','n Full Time')
     incEmp <- svby('inc',subsets=paste0(subsets,'&employed'),FUN=medStr,sdat=sdat,prop=FALSE)
     colnames(incEmp) <- c('Median Income (Employed)','Income (Employed) SE','n Employed')
     incFT <- svby('inc',subsets=paste0(subsets,'&fulltime'),FUN=medStr,sdat=sdat,prop=FALSE)
-    colnames(incEmp) <- c('Median Income (Full Time)','Income (Full Time) SE','n Full Time')
-    out <- as.data.frame(cbind(earnEmp[,-ncol(earnEmp)],incEmp,earnFT[,-ncol(earnFT)],incFT[,-ncol(incFT)]))
+    colnames(incFT) <- c('Median Income (Full Time)','Income (Full Time) SE','n Full Time')
+    out <- as.data.frame(cbind(earnEmp,incEmp,earnFT,incFT))
     out <- cbind(Subgroup=groupNames,out)
     rownames(out) <- NULL
     out
@@ -140,7 +142,7 @@ employEst <- function(subsets,sdat){
 
 
 eachOut <- function(domain,subsets,outcome,young){
-    if(young) subsets <- paste0(subsets,'&young')
+    if(young) for(i in 1:length(subsets)) subsets[i] <- paste0(subsets[i],'&young')
     fun <- switch(outcome,'Subgroup Proportions'=propEst,'Income'=moneyEst,'Employment'=employEst)
     dfend <- switch(domain,"Associates Degree"="Ass","Associates Degree Or Higher"="AssP")
     dd <- fun(subsets,get(paste0('deaf',dfend),envir=.GlobalEnv))
