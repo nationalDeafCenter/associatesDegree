@@ -76,7 +76,7 @@ attain <- function(res){
 }
 
 write.xlsx(list("Age 25-64"=attain(attain25.64),"Age 25-45"=attain(attain25.45)),
-           'EducationalAttainment2012-2016.xlsx',colWidths=c("auto","auto"),
+           'estimates/EducationalAttainment2012-2016.xlsx',colWidths=c("auto","auto"),
            row.names=TRUE)
 
 
@@ -98,7 +98,7 @@ propEst <- function(subsets,sdat,groupNames){
     for(subst in subsets)
         out <- rbind(out,estSEstr(subst,sdat=sdat)*c(100,100,1))
     out <- as.data.frame(out)
-    names(out) <- c('Percent','SE','Sample Size')
+    names(out) <- c('%','SE','Sample Size')
     out <- cbind(subgroup=if(missing(groupNames)) subsets else groupNames,out)
     out
 }
@@ -106,9 +106,9 @@ propEst <- function(subsets,sdat,groupNames){
 moneyEst <- function(subsets,sdat,groupNames){
     if(missing(groupNames)) groupNames <- subsets
     earnEmp <- svby('earn',subsets=paste0(subsets,'&employed'),FUN=medStr,sdat=sdat)
-    colnames(earnEmp) <- c('Subgroup Percent','Median Earnings (Employed)','Earnings (Employed) SE','n Employed')
+    colnames(earnEmp) <- c('Subgroup %','Median Earnings (Employed)','Earnings (Employed) SE','n Employed')
     earnFT <- svby('earn',subsets=paste0(subsets,'&fulltime'),FUN=medStr,sdat=sdat)
-    colnames(earnFT) <- c('Subgroup Percent','Median Earnings (Full Time)','Earnings (Full Time) SE','n Full Time')
+    colnames(earnFT) <- c('Subgroup %','Median Earnings (Full Time)','Earnings (Full Time) SE','n Full Time')
     incEmp <- svby('inc',subsets=paste0(subsets,'&employed'),FUN=medStr,sdat=sdat,prop=FALSE)
     colnames(incEmp) <- c('Median Income (Employed)','Income (Employed) SE','n Employed')
     incFT <- svby('inc',subsets=paste0(subsets,'&fulltime'),FUN=medStr,sdat=sdat,prop=FALSE)
@@ -130,9 +130,9 @@ employEst <- function(subsets,sdat){
     n <- out[[1]][,ncol(out[[1]])]
     out <- sapply(out,function(x) x[,-c(1,ncol(x))],simplify=FALSE)
     out <- do.call('cbind',out)*100
-    colnames(out) <- outer(c('Percent','SE'),Hmisc::capitalize(gsub('esr==6','unemployed',ocs)),paste)
+    colnames(out) <- outer(c('%','SE'),Hmisc::capitalize(gsub('esr==6','Not in Labor Force',ocs)),paste)
     out <- as.data.frame(out)
-    out <- cbind(Subgroup=groupNames,`Subgroup Percent`=p,out,`Sample Size`=n)
+    out <- cbind(Subgroup=groupNames,`Subgroup %`=p,out,`Sample Size`=n)
     rownames(out) <- NULL
 
     out
@@ -149,10 +149,11 @@ eachOut <- function(domain,subsets,outcome,young){
     dd[,sapply(dd,is.numeric)] <- round(dd[,sapply(dd,is.numeric)],1)
     hh[,sapply(hh,is.numeric)] <- round(hh[,sapply(hh,is.numeric)],1)
 
-    rbind(
-        c('','Deaf',rep('',ncol(dd)-2),'Hearing',rep('',ncol(hh)-2)),
-        c(names(dd),names(hh)[-1]),
-        cbind(as.matrix(dd),as.matrix(hh)[,-1]))
+    dd <- cbind(" "=c('Deaf',rep('',nrow(dd)-1)),dd)
+    hh <- cbind(" "=c('Hearing',rep('',nrow(hh)-1)),hh)
+
+    rbind(dd,hh)
+
 }
 
 raceEthSubs <- paste0('raceEth=="',unique(deafAss$raceEth),'"')
@@ -168,14 +169,14 @@ for(domain in c('Associates Degree','Associates Degree Or Higher')){
             cat(domain,' ',outcome,' ',young,'\n')
             out <- list(
                 "By Sex"=eachOut(domain=domain,subsets=c(Male="sex==1",Female="sex==2"),outcome=outcome,young=young),
-                "By Race/Ethnicity"=eachOut(domain=domain,subsets=raceEthSubs,outcome=outcome,young=young),
+                "By Ethnicity"=eachOut(domain=domain,subsets=raceEthSubs,outcome=outcome,young=young),
                 "By Disability Type"=eachOut(domain=domain,
                                              subsets=c('No Other Disability'="diss==0",
                                                        'Any Other Disability'="diss==1",
-                                                       'Blind'='blind==1'),outcome=outcome,young=young))#,
+                                                       'Blind'='blind==1'),outcome=outcome,young=young))
            # "By Field of Degree"=eachOut(domain=domain,fodSubs,outcome=outcome))
-        write.xlsx(out,paste0(domain,'-',outcome,'Ages ',ifelse(young,'25-45','25-64')),colNames=FALSE,rowNames=FALSE,
-                   colWidths=rep('auto',length(out)))
+            write.xlsx(out,paste0('estimates/',domain,'-',outcome,'-Ages ',ifelse(young,'25-45','25-64'),'.xlsx'),
+                       colNames=TRUE,rowNames=FALSE, colWidths=rep('auto',length(out)))
         }
     }
 }
