@@ -27,6 +27,8 @@ source('generalCode/median.r')
 source('make5yrDat.r')
 save(sdat,file='fiveYearDat.RData')
 
+sdat$raceEth <- factor(sdat$raceEth)
+sdat$fod <- factor(sdat$fod)
 
 sdat <- mutate(sdat, young=agep<46)
 
@@ -133,7 +135,8 @@ employEst <- function(subsets,sdat){
 }
 
 
-eachOut <- function(domain,subsets,outcome){
+eachOut <- function(domain,subsets,outcome,young){
+    if(young) subsets <- paste0(subsets,'&young')
     fun <- switch(outcome,'Subgroup Proportions'=propEst,'Income'=moneyEst,'Employment'=employEst)
     dfend <- switch(domain,"Associates Degree"="Ass","Associates Degree Or Higher"="AssP")
     dd <- fun(subsets,get(paste0('deaf',dfend),envir=.GlobalEnv))
@@ -148,24 +151,26 @@ eachOut <- function(domain,subsets,outcome){
         cbind(as.matrix(dd),as.matrix(hh)[,-1]))
 }
 
-raceEthSubs <- paste('raceEth==',levels(deafAss$raceEth))
+raceEthSubs <- paste0('raceEth=="',levels(deafAss$raceEth),'"')
 names(raceEthSubs) <- levels(deafAss$raceEth)
 
-fodSubs <- paste('fod==',levels(deafAss$fod))
+fodSubs <- paste0('fod=="',levels(deafAss$fod),'"')
 names(fodSubs) <- levels(deafAss$fod)
 fodSubs <- c(fodSubs,'STEM Field'='sciengp==1','STEM-Related Field'='sciengrlp==1')
 
 for(domain in c('Associates Degree','Associates Degree Or Higher')){
     for(outcome in c('Subgroup Proportions','Income','Employment')){
-        out <- list(
-            "By Sex"=eachOut(domain=domain,subsets=c(Male="sex==1",Female="sex==2"),outcome=outcome),
-            "By Race/Ethnicity"=eachOut(domain=domain,subsets=raceEthSubs,outcome=outcome),
-            "By Disability Type"=eachOut(domain=domain,
-                                         subsets=c('No Other Disability'="diss==0",
-                                                   'Any Other Disability'="diss==1",
-                                                   'Blind'='blind==1'),outcome=outcome),
-            "By Field of Degree"=eachOut(domain=domain,fodSubs,outcome=outcome))
-        write.xlsx(out,paste0(domain,'-',outcome,'Ages 25-64'),colNames=FALSE,rowNames=FALSE,
+        for(young in c(TRUE,FALSE)){
+            cat(domain,' ',outcome,' ',young,'\n')
+            out <- list(
+                "By Sex"=eachOut(domain=domain,subsets=c(Male="sex==1",Female="sex==2"),outcome=outcome,young=young),
+                "By Race/Ethnicity"=eachOut(domain=domain,subsets=raceEthSubs,outcome=outcome,young=young),
+                "By Disability Type"=eachOut(domain=domain,
+                                             subsets=c('No Other Disability'="diss==0",
+                                                       'Any Other Disability'="diss==1",
+                                                       'Blind'='blind==1'),outcome=outcome,young=young))#,
+           # "By Field of Degree"=eachOut(domain=domain,fodSubs,outcome=outcome))
+        write.xlsx(out,paste0(domain,'-',outcome,'Ages ',ifelse(young,'25-45','25-64')),colNames=FALSE,rowNames=FALSE,
                    colWidths=rep('auto',length(out)))
     }
 }
