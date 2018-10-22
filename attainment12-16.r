@@ -105,11 +105,15 @@ propEst <- function(subsets,sdat,groupNames){
 
 moneyEst <- function(subsets,sdat,groupNames){
     if(missing(groupNames)) groupNames <- subsets
-    earn <- svby('earn',subsets=subsets,FUN=medStr,sdat=sdat)
-    colnames(earn) <- c('Subgroup Percent','Median Earnings','Earnings SE','n')
-    inc <- svby('inc',subsets=subsets,FUN=medStr,sdat=sdat,prop=FALSE)
-    colnames(inc) <- c('Median Income','Income SE','n')
-    out <- as.data.frame(cbind(earn[,-ncol(earn)],inc))
+    earnEmp <- svby('earn',subsets=paste0(subsets,'&employed'),FUN=medStr,sdat=sdat)
+    colnames(earnEmp) <- c('Subgroup Percent','Median Earnings (Employed)','Earnings (Employed) SE','n Employed')
+    earnFT <- svby('earn',subsets=paste0(subsets,'&fulltime'),FUN=medStr,sdat=sdat)
+    colnames(earnFT) <- c('Subgroup Percent','Median Earnings (Full Time)','Earnings (Full Time) SE','n Full Time')
+    incEmp <- svby('inc',subsets=paste0(subsets,'&employed'),FUN=medStr,sdat=sdat,prop=FALSE)
+    colnames(incEmp) <- c('Median Income (Employed)','Income (Employed) SE','n Employed')
+    incFT <- svby('inc',subsets=paste0(subsets,'&fulltime'),FUN=medStr,sdat=sdat,prop=FALSE)
+    colnames(incEmp) <- c('Median Income (Full Time)','Income (Full Time) SE','n Full Time')
+    out <- as.data.frame(cbind(earnEmp[,-ncol(earnEmp)],incEmp,earnFT[,-ncol(earnFT)],incFT[,-ncol(incFT)]))
     out <- cbind(Subgroup=groupNames,out)
     rownames(out) <- NULL
     out
@@ -151,8 +155,8 @@ eachOut <- function(domain,subsets,outcome,young){
         cbind(as.matrix(dd),as.matrix(hh)[,-1]))
 }
 
-raceEthSubs <- paste0('raceEth=="',levels(deafAss$raceEth),'"')
-names(raceEthSubs) <- levels(deafAss$raceEth)
+raceEthSubs <- paste0('raceEth=="',unique(deafAss$raceEth),'"')
+names(raceEthSubs) <- unique(deafAss$raceEth)
 
 fodSubs <- paste0('fod=="',levels(deafAss$fod),'"')
 names(fodSubs) <- levels(deafAss$fod)
@@ -172,26 +176,7 @@ for(domain in c('Associates Degree','Associates Degree Or Higher')){
            # "By Field of Degree"=eachOut(domain=domain,fodSubs,outcome=outcome))
         write.xlsx(out,paste0(domain,'-',outcome,'Ages ',ifelse(young,'25-45','25-64')),colNames=FALSE,rowNames=FALSE,
                    colWidths=rep('auto',length(out)))
+        }
     }
 }
 
-
-deafAss <- filter(deafAss,young)
-deafAssP <- filter(deafAssP,young)
-hearAss <- filter(hearAss,young)
-hearAss <- filter(hearAssP,young)
-
-for(domain in c('Associates Degree','Associates Degree Or Higher')){
-    for(outcome in c('Subgroup Proportions','Income','Employment')){
-        out <- list(
-            "By Sex"=eachOut(domain=domain,subsets=c(Male="sex==1",Female="sex==2"),outcome=outcome),
-            "By Race/Ethnicity"=eachOut(domain=domain,subsets=raceEthSubs,outcome=outcome),
-            "By Disability Type"=eachOut(domain=domain,
-                                         subsets=c('No Other Disability'="diss==0",
-                                                   'Any Other Disability'="diss==1",
-                                                   'Blind'='blind==1'),outcome=outcome),
-            "By Field of Degree"=eachOut(domain=domain,fodSubs,outcome=outcome))
-        write.xlsx(out,paste0(domain,'-',outcome,'Ages 25-45'),colNames=FALSE,rowNames=FALSE,
-                   colWidths=rep('auto',length(out)))
-    }
-}

@@ -97,7 +97,7 @@ sdat <- sdat%>%filter(agep>24,agep<65,type!=2)%>%
         doc = schl==24,
         employed = esr%in%c(1,2,4,5),
         unemployed = esr==3,
-        fulltime=(wkw==1 & wkhp>=35),
+        fulltime=employed&(wkw==1 & wkhp>=35),
         earn=pernp*adj,
         inc=pincp*adj,
 
@@ -107,7 +107,7 @@ sdat <- sdat%>%filter(agep>24,agep<65,type!=2)%>%
                 ifelse(rac1p%in%c(3,4,5),'American Indian',
                 ifelse(rac1p==1,"White","Other"))))),
 
-        diss=ifelse(ddrs==1|deye==1|dout==1|dphy==1|dratx==1|drem==1,1,0),
+        diss=ifelse(ddrs==1|deye==1|dout==1|dphy==1|(!is.na(dratx)&dratx==1)|drem==1,1,0),
         blind=ifelse(deye==1,1,0),
 
         fod= ifelse(fod1p%in%c(2100,2102,2103,2105,2106,2107,2199,3700,3701,3702,3705,3799),
