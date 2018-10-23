@@ -4,6 +4,7 @@
 library(readr)
 library(dplyr)
 library(ggplot2)
+library(scales)
 source('generalCode/estimationFunctions.r')
 
 varNames <- tolower(c('PWGTP',paste0('PWGTP',1:80),'AGEP','DEAR','SCH','SCHG','SCHL'))
@@ -25,7 +26,7 @@ loadDatOneYear <- function(YR){
 
     rm(datA,datB); gc()
 
-    dat <- dat%>%filter(agep>24, agep<65,sch>1,schg==15)%>%
+    dat <- dat%>%filter(agep>17, agep<65,sch>1,schg==15)%>%
         mutate( young=agep<46, deaf=dear==1)
 
 
@@ -79,18 +80,21 @@ transformVarb <- function(varb,young,yearests){
 }
 
 transformEsts <- function(yearests)
-    list(
-        full=lapply(names(yearests[[1]]$full),transformVarb,young=FALSE,yearests=yearests),
-        young=lapply(names(yearests[[1]]$full),transformVarb,young=TRUE,yearests=yearests)
+    out <- list(
+        full=sapply(names(yearests[[1]]$full),transformVarb,young=FALSE,yearests=yearests,simplify=FALSE),
+        young=sapply(names(yearests[[1]]$full),transformVarb,young=TRUE,yearests=yearests,simplify=FALSE)
     )
+
 
 
 plotTrend <- function(td,ylabel,Title,m,b){
     p <- ggplot(td,aes(year,est))+geom_point()+
-        geom_errorbar(aes(ymin=est-se,ymax=est+se),size=0.75)+
-        geom_errorbar(aes(ymin=est-2*se,ymax=est+2*se),size=0.5)
-    if(!missing(m))
-        p <- p+geom_abline(slope=m,intercept=b)
+        geom_errorbar(aes(ymin=est-se,ymax=est+se),size=0.75,width=0)+
+        geom_errorbar(aes(ymin=est-2*se,ymax=est+2*se),size=0.5,width=0)+
+        scale_y_continuous(labels=if(max(td$est)<1) percent else scientific)+
+        scale_x_continuous(breaks=8:17,labels=c('2008','2009',paste0('20',10:17)))+
+        theme(axis.text.x= element_text(angle=45))
+    p <- p+if(!missing(m)) geom_abline(slope=m,intercept=b) else geom_smooth()
     if(!missing(ylabel))
         p <- p+ylab(ylabel)
     if(!missing(Title))
@@ -98,9 +102,36 @@ plotTrend <- function(td,ylabel,Title,m,b){
     p
 }
 
-
+estTrend <- function(td){
+    mod <- lm(est~year,data=td,weights=se)
+    summary(mod)$coef[2,]
+}
 
 yearEsts <- makeYearEsts()
 save(yearEsts,file='enrollmentByYear.RData')
 
 ests <- transformEsts(yearEsts)
+
+full <- NULL
+results <- list()
+for(y in c('full','young')){
+    pdf(if(y=='full') 'Ages18-64.pdf' else 'Ages18-45.pdf')
+    res <- 2008:2017
+    for(xx in names(ests[[y]])){
+        ylabel <- if(startsWith(xx,'tot')) 'Number' else 'Percent Deaf'
+        Title <- switch(xx,'totEnrolled'='Total Enrollment',
+                        'totDeaf'='Total Deaf Enrollment',
+                        'percDeaf'='Deaf Enrollment Share',
+                        'tot1stYear'='Total First-Year Enrollment',
+                        'totDeaf1stYear'='Total Deaf First-Year Enrollment',
+                        'percDeaf1stYear'='Deaf 1st-Year Enrollment Share')
+        plot(plotTrend(ests[[y]][[xx]],ylabel,Title))
+        res <- cbind(res,ests[[y]][[xx]][,'est'])
+        if(max(res[,ncol(res)])<1) res[,ncol(res)] <- round(100*res[,ncol(res)],2)
+        colnames(res)[ncol(res)] <- Title
+    }
+    results[[y]] <- res
+    dev.off()
+}
+
+openxlsx::write.xlsx(results,'enrollment.xlsx')
